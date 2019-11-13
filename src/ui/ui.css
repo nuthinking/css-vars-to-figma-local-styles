@@ -1,3 +1,37 @@
 body {
   font-family: sans-serif;
+  padding: 8px;
+  font-size: 14px;
+}
+
+hr {
+  margin: 10px 0;
+  opacity: 0;
+}
+
+input[type=checkbox] {
+  margin: 5px 0;
+  margin-right: 8px;
+}
+
+button {
+  font-weight: 400;
+  display: block;
+  text-align: center;
+  flex-shrink: 0;
+  height: 32px;
+  line-height: 30px;
+  max-width: 200px;
+  padding: 0 15px;
+  background-color: transparent;
+  box-sizing: border-box;
+  border-radius: 6px;
+  color: #333;
+  border: 1px solid rgba(0,0,0,.8);
+  background-clip: padding-box;
+  margin-left: auto;
+}
+
+button:disabled {
+  opacity: 0.4;
 }

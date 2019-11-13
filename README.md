@@ -21,3 +21,7 @@ Because it has some dependencies, you still have to run:
 ## Run development
 
     npx webpack --mode=development --watch
+
+## Build for production
+
+    npx webpack --mode=production

@@ -28,9 +28,17 @@ class CustomPaint implements SolidPaint {
   }
 }
 
+enum TokenType {
+  Unknown,
+  Color,
+  Text
+}
+
 class Token {
   name: string;
+  type: TokenType = TokenType.Unknown;
   rawValue: string;
+  parent?: Token;
   color?: RGBA;
 }
 
@@ -73,7 +81,7 @@ const parseStyles = (content: string): Token[] => {
   console.log(`will parse ${lines.length} lines`);
 
   // save variables with raw value, overriding
-  let map: { [key: string]: Token } = {};
+  let tokensDict: { [key: string]: Token } = {};
   lines.forEach(line => {
     line = line.trim();
     const comp = line.split(":");
@@ -84,24 +92,35 @@ const parseStyles = (content: string): Token[] => {
     const token = new Token();
     token.name = name;
     token.rawValue = rawValue;
-    map[name] = token;
+    tokensDict[name] = token;
   });
 
-  const getVariableValue = (rawValue: string): RGBA => {
+  const retrieveTokenValue = (token: Token) => {
+    const rawValue = token.rawValue;
     if (rawValue.startsWith("rgba(")) {
-      return parseRGBAValue(rawValue);
+      token.type = TokenType.Color;
+      token.color = parseRGBAValue(rawValue);
+      return;
     }
     if (rawValue.startsWith("#")) {
-      return parseHexValue(rawValue);
+      token.type = TokenType.Color;
+      token.color = parseHexValue(rawValue);
+      return;
     }
     if (rawValue.startsWith("var(")) {
       const variableName = getTextWithinBounds(rawValue, '(', ')').trim();
-      if (map[variableName]) {
-        const variableRawValue = map[variableName].rawValue;
-        return getVariableValue(variableRawValue);
+      if (tokensDict[variableName]) {
+        const parentToken = tokensDict[variableName];
+        retrieveTokenValue(parentToken);
+        token.parent = parentToken;
+        token.type = parentToken.type;
+        if (token.type === TokenType.Color) {
+          token.color = parentToken.color;
+        }
+      } else {
+        console.error(`Token ${variableName} is not present in the file`);
       }
-      console.error(`Token ${variableName} is not present in the file`);
-      return { r: 0, b: 0, g: 0, a: 0 };
+      return;
     }
     const comps = rawValue.split(",");
     if (comps.length > 2) {
@@ -109,22 +128,25 @@ const parseStyles = (content: string): Token[] => {
       const g = parseInt(comps[1]) / 255;
       const b = parseInt(comps[2]) / 255;
       const a = comps.length > 3 ? parseFloat(comps[3]) : 1;
-      return { r, b, g, a };
+      token.type = TokenType.Color;
+      token.color = { r, b, g, a };
+      return;
     }
     const browserColor = browserColors[rawValue.toLowerCase()];
     if (browserColor) {
-      return parseHexValue(browserColor);
+      token.type = TokenType.Color;
+      token.color = parseHexValue(browserColor);
+      return;
     }
     console.error(`Couldn't parse rawValue "${rawValue}"`);
-    return { r: 0, b: 0, g: 0, a: 0 };
   };
 
-  var keys = Object.keys(map);
+  var keys = Object.keys(tokensDict);
   console.log(`Imported ${keys.length} tokens`);
   let result: Token[] = [];
-  keys.forEach(key => {
-    const token = map[key];
-    token.color = getVariableValue(token.rawValue);
+  keys.forEach(name => {
+    const token = tokensDict[name];
+    retrieveTokenValue(token);
     result.push(token);
     // console.log(`${variable.name} - ${variable.rawValue} - {r:${variable.color.r}, g:${variable.color.g}, b:${variable.color.b}, a:${variable.color.a}}`);
   });
@@ -151,20 +173,27 @@ figma.ui.onmessage = msg => {
     } else {
       tokens = parseStyles(fileContent);
     }
+
     let updatedStylesCount = 0;
     let addedStylesCount = 0;
     const styles = figma.getLocalPaintStyles();
-    tokens.forEach(variable => {
-      let variableName = variable.name;
+    tokens.forEach(token => {
+      let tokenName = token.name;
       if (cleanName) {
         // remove "--" prefix
-        variableName = variableName.substr(2);
+        tokenName = tokenName.substr(2);
       }
+
+      if (token.type !== TokenType.Color) {
+        console.log(`Can't create style for ${tokenName} type ${token.type} because only Colors are supported`);
+        return;
+      }
+
       let hasStyle = false;
       for (let i = 0; i < styles.length; i++) {
         const style = styles[i];
-        if (style.name.toLowerCase() === variableName.toLowerCase()) {
-          style.paints = [new CustomPaint(variable.color)];
+        if (style.name.toLowerCase() === tokenName.toLowerCase()) {
+          style.paints = [new CustomPaint(token.color)];
           hasStyle = true;
           i = styles.length;
           updatedStylesCount++;
@@ -172,8 +201,8 @@ figma.ui.onmessage = msg => {
       }
       if (!hasStyle && addStyles) {
         const style = figma.createPaintStyle();
-        style.name = variable.name;
-        style.paints = [new CustomPaint(variable.color)];
+        style.name = token.name;
+        style.paints = [new CustomPaint(token.color)];
         addedStylesCount++;
       }
     });

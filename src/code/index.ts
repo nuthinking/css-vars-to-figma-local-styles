@@ -206,8 +206,9 @@ figma.ui.onmessage = msg => {
         addedStylesCount++;
       }
     });
-    console.log(`Updated ${updatedStylesCount} styles`);
-    console.log(`Added ${addedStylesCount} styles`);
+    alert(`Updated ${updatedStylesCount} styles and added ${addedStylesCount}.`);
+    // console.log(`Updated ${updatedStylesCount} styles`);
+    // console.log(`Added ${addedStylesCount} styles`);
   }
   // Make sure to close the plugin when you're done. Otherwise the plugin will
   // keep running, which shows the cancel button at the bottom of the screen.

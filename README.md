@@ -13,3 +13,11 @@ It also gives the option to strip the "--" prefix of the CSS variables name from
 ## Installation
 
 Currently only in dev mode. Follow instructions [here](https://www.figma.com/plugin-docs/setup/).
+
+Because it has some dependencies, you still have to run:
+
+    npm install
+
+## Run development
+
+    npx webpack --mode=development --watch

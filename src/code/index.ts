@@ -120,7 +120,7 @@ const parseStyles = (content: string): Token[] => {
   };
 
   var keys = Object.keys(map);
-  console.log(`Created ${keys.length} variables`);
+  console.log(`Imported ${keys.length} tokens`);
   let result: Token[] = [];
   keys.forEach(key => {
     const token = map[key];
@@ -151,7 +151,8 @@ figma.ui.onmessage = msg => {
     } else {
       tokens = parseStyles(fileContent);
     }
-
+    let updatedStylesCount = 0;
+    let addedStylesCount = 0;
     const styles = figma.getLocalPaintStyles();
     tokens.forEach(variable => {
       let variableName = variable.name;
@@ -166,14 +167,18 @@ figma.ui.onmessage = msg => {
           style.paints = [new CustomPaint(variable.color)];
           hasStyle = true;
           i = styles.length;
+          updatedStylesCount++;
         }
       }
       if (!hasStyle && addStyles) {
         const style = figma.createPaintStyle();
         style.name = variable.name;
         style.paints = [new CustomPaint(variable.color)];
+        addedStylesCount++;
       }
     });
+    console.log(`Updated ${updatedStylesCount} styles`);
+    console.log(`Added ${addedStylesCount} styles`);
   }
   // Make sure to close the plugin when you're done. Otherwise the plugin will
   // keep running, which shows the cancel button at the bottom of the screen.

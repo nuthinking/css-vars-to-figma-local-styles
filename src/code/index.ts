@@ -5,7 +5,8 @@
 // You can access browser APIs in the <script> tag inside "ui.html" which has a
 // full browser enviroment (see documentation).
 
-import browserColors from './browserColors'
+import browserColors from './browserColors';
+import { getTextWithinBounds } from '../utils/index';
 
 // This shows the HTML page in "ui.html".
 figma.showUI(__html__);
@@ -34,26 +35,18 @@ class Variable {
 }
 
 const parseRGBAValue = (rawValue: string): RGBA => {
-  const regex = /\([0-9][^\)]*\)/;
-  const match = rawValue.match(regex);
-  if (match) {
-    let value = match[0];
-    value = value.substr(1);
-    value = value.substring(0, value.length - 1);
-    const values = value.split(",");
-    const r = parseFloat(values[0].trim()) / 255;
-    const g = parseFloat(values[1].trim()) / 255;
-    const b = parseFloat(values[2].trim()) / 255;
-    const a = parseFloat(values[3].trim());
-    return {
-      r,
-      g,
-      b,
-      a
-    };
-  }
-  console.error(`Couldn't parse RGBA value ${rawValue}`);
-  return { r: 0, b: 0, g: 0, a: 0 };
+  const value = getTextWithinBounds(rawValue, '(', ')');
+  const values = value.split(",");
+  const r = parseFloat(values[0].trim()) / 255;
+  const g = parseFloat(values[1].trim()) / 255;
+  const b = parseFloat(values[2].trim()) / 255;
+  const a = parseFloat(values[3].trim());
+  return {
+    r,
+    g,
+    b,
+    a
+  };
 };
 
 const parseHexValue = (rawValue: string): RGBA => {
@@ -102,20 +95,13 @@ const parseStyles = (content: string): Variable[] => {
       return parseHexValue(rawValue);
     }
     if (rawValue.startsWith("var(")) {
-      const reg = /\((.|\n)[^\)]*\)/;
-      const match = rawValue.match(reg);
-      if (match) {
-        let variableName = match[0];
-        variableName = variableName.substr(1);
-        variableName = variableName.substring(0, variableName.length - 1);
-        variableName = variableName.trim();
-        if (map[variableName]) {
-          const variableRawValue = map[variableName].rawValue;
-          return getVariableValue(variableRawValue);
-        }
-        console.error(`Token ${variableName} is not present in the file`);
-        return { r: 0, b: 0, g: 0, a: 0 };
+      const variableName = getTextWithinBounds(rawValue, '(', ')').trim();
+      if (map[variableName]) {
+        const variableRawValue = map[variableName].rawValue;
+        return getVariableValue(variableRawValue);
       }
+      console.error(`Token ${variableName} is not present in the file`);
+      return { r: 0, b: 0, g: 0, a: 0 };
     }
     const comps = rawValue.split(",");
     if (comps.length > 2) {
@@ -160,9 +146,7 @@ figma.ui.onmessage = msg => {
     let variables: Variable[] = [];
     const hasBlock = fileContent.indexOf("{") > -1;
     if (hasBlock) {
-      const start = fileContent.indexOf("{");
-      const end = fileContent.indexOf("}");
-      const blockContent = fileContent.substring(start + 1, end);
+      const blockContent = getTextWithinBounds(fileContent, '{', '}');
       variables = parseStyles(blockContent);
     } else {
       variables = parseStyles(fileContent);

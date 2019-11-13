@@ -1,0 +1,30 @@
+<h2>Update local styles</h2>
+<p>Select css or scss file:</p>
+<input id="file" type="file" accept=".css,.scss" />
+<button id="apply" disabled>Apply</button>
+<button id="cancel">Cancel</button>
+<script>
+
+document.getElementById('file').onchange = (e) => {
+  const btn = document.getElementById('apply');
+  btn.removeAttribute('disabled');
+}
+
+document.getElementById('apply').onclick = () => {
+  // const textbox = document.getElementById('count');
+  // const count = parseInt(textbox.value, 10);
+  const input = document.getElementById('file');
+  const file = input.files[0];
+  var reader = new FileReader();
+  reader.onloadend = (e) => {
+    const fileContent = e.target.result;
+    parent.postMessage({ pluginMessage: { type: 'update-styles', fileContent } }, '*')
+  }
+  reader.readAsText(file);
+}
+
+document.getElementById('cancel').onclick = () => {
+  parent.postMessage({ pluginMessage: { type: 'cancel' } }, '*')
+}
+
+</script>

@@ -28,7 +28,7 @@ class CustomPaint implements SolidPaint {
   }
 }
 
-class Variable {
+class Token {
   name: string;
   rawValue: string;
   color?: RGBA;
@@ -62,7 +62,7 @@ const parseHexValue = (rawValue: string): RGBA => {
   return { r: 0, b: 0, g: 0, a: 0 };
 };
 
-const parseStyles = (content: string): Variable[] => {
+const parseStyles = (content: string): Token[] => {
   // remove comments
   const commentsReg = /\/\*[\s\S]*?\*\/|\/\/.*/g;
   content = content.replace(commentsReg, "");
@@ -73,7 +73,7 @@ const parseStyles = (content: string): Variable[] => {
   console.log(`will parse ${lines.length} lines`);
 
   // save variables with raw value, overriding
-  let map: { [key: string]: Variable } = {};
+  let map: { [key: string]: Token } = {};
   lines.forEach(line => {
     line = line.trim();
     const comp = line.split(":");
@@ -81,10 +81,10 @@ const parseStyles = (content: string): Variable[] => {
     let rawValue = comp[1].trim();
     // remove ':'
     rawValue = rawValue.substring(0, rawValue.length - 1);
-    const variable = new Variable();
-    variable.name = name;
-    variable.rawValue = rawValue;
-    map[name] = variable;
+    const token = new Token();
+    token.name = name;
+    token.rawValue = rawValue;
+    map[name] = token;
   });
 
   const getVariableValue = (rawValue: string): RGBA => {
@@ -121,11 +121,11 @@ const parseStyles = (content: string): Variable[] => {
 
   var keys = Object.keys(map);
   console.log(`Created ${keys.length} variables`);
-  let result: Variable[] = [];
+  let result: Token[] = [];
   keys.forEach(key => {
-    const variable = map[key];
-    variable.color = getVariableValue(variable.rawValue);
-    result.push(variable);
+    const token = map[key];
+    token.color = getVariableValue(token.rawValue);
+    result.push(token);
     // console.log(`${variable.name} - ${variable.rawValue} - {r:${variable.color.r}, g:${variable.color.g}, b:${variable.color.b}, a:${variable.color.a}}`);
   });
 
@@ -143,17 +143,17 @@ figma.ui.onmessage = msg => {
     const cleanName = msg.cleanName as boolean;
     const addStyles = msg.addStyles as boolean;
 
-    let variables: Variable[] = [];
+    let tokens: Token[] = [];
     const hasBlock = fileContent.indexOf("{") > -1;
     if (hasBlock) {
       const blockContent = getTextWithinBounds(fileContent, '{', '}');
-      variables = parseStyles(blockContent);
+      tokens = parseStyles(blockContent);
     } else {
-      variables = parseStyles(fileContent);
+      tokens = parseStyles(fileContent);
     }
 
     const styles = figma.getLocalPaintStyles();
-    variables.forEach(variable => {
+    tokens.forEach(variable => {
       let variableName = variable.name;
       if (cleanName) {
         // remove "--" prefix

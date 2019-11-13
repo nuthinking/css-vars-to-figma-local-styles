@@ -17,7 +17,3 @@ document.getElementById('apply').onclick = () => {
   }
   reader.readAsText(file);
 }
-
-// document.getElementById('cancel').onclick = () => {
-//   parent.postMessage({ pluginMessage: { type: 'cancel' } }, '*')
-// }

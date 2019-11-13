@@ -1,13 +1,4 @@
-<h2>Update local styles</h2>
-<p>Select css or scss file:</p>
-<input id="file" type="file" accept=".css,.scss" />
-<hr />
-<input type="checkbox" id="clean-name">Remove "--" from variable name<br />
-<input type="checkbox" id="add-styles">Create new styles if missing<br />
-<hr />
-<button id="apply" disabled>Apply</button>
-<button id="cancel">Cancel</button>
-<script>
+import './ui.css'
 
 document.getElementById('file').onchange = (e) => {
   const btn = document.getElementById('apply');
@@ -15,9 +6,9 @@ document.getElementById('file').onchange = (e) => {
 }
 
 document.getElementById('apply').onclick = () => {
-  const cleanName = document.getElementById('clean-name').checked;
-  const addStyles = document.getElementById('add-styles').checked;
-  const input = document.getElementById('file');
+  const cleanName = (document.getElementById('clean-name') as HTMLInputElement).checked;
+  const addStyles = (document.getElementById('add-styles') as HTMLInputElement).checked;
+  const input = document.getElementById('file') as HTMLInputElement;
   const file = input.files[0];
   var reader = new FileReader();
   reader.onloadend = (e) => {
@@ -30,5 +21,3 @@ document.getElementById('apply').onclick = () => {
 document.getElementById('cancel').onclick = () => {
   parent.postMessage({ pluginMessage: { type: 'cancel' } }, '*')
 }
-
-</script>

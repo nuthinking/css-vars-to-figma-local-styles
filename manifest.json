@@ -2,6 +2,6 @@
   "name": "CSS Vars To Local Styles",
   "id": "776338513926993922",
   "api": "1.0.0",
-  "main": "code.js",
-  "ui": "ui.html"
+  "main": "dist/code.js",
+  "ui": "dist/ui.html"
 }

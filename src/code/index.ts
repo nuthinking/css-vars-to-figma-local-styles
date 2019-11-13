@@ -5,70 +5,14 @@
 // You can access browser APIs in the <script> tag inside "ui.html" which has a
 // full browser enviroment (see documentation).
 
+import Token from './model/Token'
 import browserColors from './browserColors';
-import { getTextWithinBounds } from '../utils/index';
+import { getTextWithinBounds, parseRGBAValue, parseHexValue } from '../utils/index';
+import TokenType from './model/TokenType';
+import CustomPaint from './model/CustomPaint';
 
 // This shows the HTML page in "ui.html".
 figma.showUI(__html__);
-
-class CustomPaint implements SolidPaint {
-  type: "SOLID" = "SOLID";
-  color: RGB;
-  visible?: boolean;
-  opacity?: number;
-  blendMode?: BlendMode;
-
-  constructor(rgba: RGBA) {
-    this.color = {
-      r: rgba.r,
-      g: rgba.g,
-      b: rgba.b
-    };
-    this.opacity = rgba.a;
-  }
-}
-
-enum TokenType {
-  Unknown,
-  Color,
-  Text
-}
-
-class Token {
-  name: string;
-  type: TokenType = TokenType.Unknown;
-  rawValue: string;
-  parent?: Token;
-  color?: RGBA;
-}
-
-const parseRGBAValue = (rawValue: string): RGBA => {
-  const value = getTextWithinBounds(rawValue, '(', ')');
-  const values = value.split(",");
-  const r = parseFloat(values[0].trim()) / 255;
-  const g = parseFloat(values[1].trim()) / 255;
-  const b = parseFloat(values[2].trim()) / 255;
-  const a = parseFloat(values[3].trim());
-  return {
-    r,
-    g,
-    b,
-    a
-  };
-};
-
-const parseHexValue = (rawValue: string): RGBA => {
-  var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(rawValue);
-  if (result) {
-    const r = parseInt(result[1], 16) / 255;
-    const g = parseInt(result[2], 16) / 255;
-    const b = parseInt(result[3], 16) / 255;
-    const a = 1;
-    return { r, g, b, a };
-  }
-  console.error(`Couldn't parse HEX value ${rawValue}`);
-  return { r: 0, b: 0, g: 0, a: 0 };
-};
 
 const parseStyles = (content: string): Token[] => {
   // remove comments

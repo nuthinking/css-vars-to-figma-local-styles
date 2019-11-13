@@ -15,8 +15,13 @@ class CustomPaint implements SolidPaint {
   opacity?: number;
   blendMode?: BlendMode;
 
-  constructor(rgb: RGB) {
-    this.color = rgb;
+  constructor(rgba: RGBA) {
+    this.color = {
+      r:rgba.r,
+      g:rgba.g,
+      b:rgba.b
+    };
+    this.opacity = rgba.a;
   }
 }
 
@@ -120,14 +125,15 @@ const parseStyles = (content: string): Variable[] => {
   }
 
   var keys = Object.keys(map);
+  let result:Variable[] = [];
   keys.forEach(key => {
     const variable = map[key];
     variable.color = getVariableValue(variable.rawValue);
-    console.log(`${variable.name} - ${variable.rawValue} - {r:${variable.color.r}, g:${variable.color.g}, b:${variable.color.b}, a:${variable.color.a}}`);
+    result.push(variable);
+    // console.log(`${variable.name} - ${variable.rawValue} - {r:${variable.color.r}, g:${variable.color.g}, b:${variable.color.b}, a:${variable.color.a}}`);
   });
 
-  // 1 by 1 retrieve value
-  return [];
+  return result;
 }
 
 // Calls to "parent.postMessage" from within the HTML page will trigger this
@@ -138,29 +144,45 @@ figma.ui.onmessage = msg => {
   // your HTML page is to use an object with a "type" property like this.
   if (msg.type === 'update-styles') {
     const fileContent = msg.fileContent as string;
-    // console.log("update styles with content: " + fileContent);
+    const cleanName = msg.cleanName as boolean;
+    const addStyles = msg.addStyles as boolean;
 
     // find block
     const blockReg = /{(.|\n)[^}]*}/;
     const block = fileContent.match(blockReg);
+    let variables:Variable[];
     if (block) {
       let blockContent = block[0];
       blockContent = blockContent.substr(1);
       blockContent = blockContent.substring(0, blockContent.length - 1);
-      parseStyles(blockContent);
+      variables = parseStyles(blockContent);
     } else {
-      parseStyles(fileContent);
+      variables = parseStyles(fileContent);
     }
 
-    // const styles = figma.getLocalPaintStyles();
-    // styles.forEach(s => {
-    //   console.log("Style: " + s.name + ' - ' + s.type);
-    //   if(s.name === "Red"){
-    //     // 
-    //     const p = new CustomPaint({r:1, g:0, b:0});
-    //     s.paints = [p];
-    //   }
-    // });
+
+    const styles = figma.getLocalPaintStyles();
+    variables.forEach( variable => {
+      let variableName = variable.name;
+      if(cleanName){
+        // remove "--" prefix
+        variableName = variableName.substr(2);
+      }
+      let hasStyle = false;
+      for (let i=0; i<styles.length; i++){
+        const style = styles[i];
+        if(style.name.toLowerCase() === variableName.toLowerCase()){
+          style.paints = [new CustomPaint(variable.color)];
+          hasStyle = true;
+          i = styles.length;
+        }
+      }
+      if(!hasStyle && addStyles){
+        const style = figma.createPaintStyle();
+        style.name = variable.name;
+        style.paints = [new CustomPaint(variable.color)];
+      }
+    });
 
     // const nodes: SceneNode[] = [];
     // for (let i = 0; i < msg.count; i++) {

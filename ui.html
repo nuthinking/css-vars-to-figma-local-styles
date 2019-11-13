@@ -1,6 +1,10 @@
 <h2>Update local styles</h2>
 <p>Select css or scss file:</p>
 <input id="file" type="file" accept=".css,.scss" />
+<hr />
+<input type="checkbox" id="clean-name">Remove "--" from variable name<br />
+<input type="checkbox" id="add-styles">Create new styles if missing<br />
+<hr />
 <button id="apply" disabled>Apply</button>
 <button id="cancel">Cancel</button>
 <script>
@@ -11,14 +15,14 @@ document.getElementById('file').onchange = (e) => {
 }
 
 document.getElementById('apply').onclick = () => {
-  // const textbox = document.getElementById('count');
-  // const count = parseInt(textbox.value, 10);
+  const cleanName = document.getElementById('clean-name').checked;
+  const addStyles = document.getElementById('add-styles').checked;
   const input = document.getElementById('file');
   const file = input.files[0];
   var reader = new FileReader();
   reader.onloadend = (e) => {
     const fileContent = e.target.result;
-    parent.postMessage({ pluginMessage: { type: 'update-styles', fileContent } }, '*')
+    parent.postMessage({ pluginMessage: { type: 'update-styles', fileContent, cleanName, addStyles } }, '*')
   }
   reader.readAsText(file);
 }

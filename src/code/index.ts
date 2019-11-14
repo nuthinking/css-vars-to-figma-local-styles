@@ -5,38 +5,39 @@
 // You can access browser APIs in the <script> tag inside "ui.html" which has a
 // full browser enviroment (see documentation).
 
-import Token from "./model/Token";
-import browserColors from "./browserColors";
+import Token from './model/Token';
+import browserColors from './browserColors';
 import {
   getTextWithinBounds,
   parseRGBAValue,
   parseHexValue
-} from "../utils/index";
-import TokenType from "./model/TokenType";
-import CustomPaint from "./model/CustomPaint";
-import MessageType from "../messages/MessageType";
+} from '../utils/index';
+import TokenType from './model/TokenType';
+import CustomPaint from './model/CustomPaint';
+import MessageType from '../messages/MessageType';
+import drawTokens from './drawTokens';
 
-const clientStoragePrefix = "css-2-local-vars-";
+const clientStoragePrefix = 'css-2-local-vars-';
 
 (async () => {
-  const elements = ["cleanName", "addStyles"];
+  const elements = ['cleanName', 'addStyles', 'createTree'];
   let msg = { type: MessageType.InitializeUI };
   for (var i = 0; i < elements.length; i++) {
     const id = elements[i];
     msg[id] = await figma.clientStorage.getAsync(clientStoragePrefix + id);
   }
   figma.ui.postMessage(msg);
-  console.log("UI Restored");
+  console.log('UI Restored');
 })();
 
 // This shows the HTML page in "ui.html".
 figma.showUI(__html__);
-
+figma.ui.resize(300, 230);
 
 const parseStyles = (content: string): Token[] => {
   // remove comments
   const commentsReg = /\/\*[\s\S]*?\*\/|\/\/.*/g;
-  content = content.replace(commentsReg, "");
+  content = content.replace(commentsReg, '');
   // console.log("Will parse block:" + content);
   let lines = content.split(/\r?\n/);
   // remove empty lines
@@ -47,7 +48,7 @@ const parseStyles = (content: string): Token[] => {
   let tokensDict: { [key: string]: Token } = {};
   lines.forEach(line => {
     line = line.trim();
-    const comp = line.split(":");
+    const comp = line.split(':');
     const name = comp[0].trim();
     let rawValue = comp[1].trim();
     // remove ':'
@@ -60,18 +61,18 @@ const parseStyles = (content: string): Token[] => {
 
   const retrieveTokenValue = (token: Token) => {
     const rawValue = token.rawValue;
-    if (rawValue.startsWith("rgba(")) {
+    if (rawValue.startsWith('rgba(')) {
       token.type = TokenType.Color;
       token.color = parseRGBAValue(rawValue);
       return;
     }
-    if (rawValue.startsWith("#")) {
+    if (rawValue.startsWith('#')) {
       token.type = TokenType.Color;
       token.color = parseHexValue(rawValue);
       return;
     }
-    if (rawValue.startsWith("var(")) {
-      const variableName = getTextWithinBounds(rawValue, "(", ")").trim();
+    if (rawValue.startsWith('var(')) {
+      const variableName = getTextWithinBounds(rawValue, '(', ')').trim();
       if (tokensDict[variableName]) {
         const parentToken = tokensDict[variableName];
         retrieveTokenValue(parentToken);
@@ -85,7 +86,7 @@ const parseStyles = (content: string): Token[] => {
       }
       return;
     }
-    const comps = rawValue.split(",");
+    const comps = rawValue.split(',');
     if (comps.length > 2) {
       const r = parseInt(comps[0]) / 255;
       const g = parseInt(comps[1]) / 255;
@@ -131,14 +132,21 @@ figma.ui.onmessage = msg => {
       const fileContent = msg.fileContent as string;
       const cleanName = msg.cleanName as boolean;
       const addStyles = msg.addStyles as boolean;
+      const createTree = msg.createTree as boolean;
 
       let tokens: Token[] = [];
-      const hasBlock = fileContent.indexOf("{") > -1;
+      const hasBlock = fileContent.indexOf('{') > -1;
       if (hasBlock) {
-        const blockContent = getTextWithinBounds(fileContent, "{", "}");
+        const blockContent = getTextWithinBounds(fileContent, '{', '}');
         tokens = parseStyles(blockContent);
       } else {
         tokens = parseStyles(fileContent);
+      }
+      if (createTree) {
+        tokens = tokens.sort((a, b) => {
+          return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
+        });
+        drawTokens(tokens);
       }
 
       let updatedStylesCount = 0;

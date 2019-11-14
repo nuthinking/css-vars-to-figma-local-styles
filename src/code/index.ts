@@ -18,7 +18,7 @@ import MessageType from "../messages/MessageType";
 
 const clientStoragePrefix = "css-2-local-vars-";
 
-const loadLatestState = async () => {
+(async () => {
   const elements = ["cleanName", "addStyles"];
   let msg = { type: MessageType.InitializeUI };
   for (var i = 0; i < elements.length; i++) {
@@ -26,15 +26,12 @@ const loadLatestState = async () => {
     msg[id] = await figma.clientStorage.getAsync(clientStoragePrefix + id);
   }
   figma.ui.postMessage(msg);
-};
+  console.log("UI Restored");
+})();
 
 // This shows the HTML page in "ui.html".
 figma.showUI(__html__);
 
-loadLatestState().then(() => {
-  // sent
-  console.log("UI Restored");
-});
 
 const parseStyles = (content: string): Token[] => {
   // remove comments

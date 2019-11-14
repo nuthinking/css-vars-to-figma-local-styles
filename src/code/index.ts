@@ -5,14 +5,36 @@
 // You can access browser APIs in the <script> tag inside "ui.html" which has a
 // full browser enviroment (see documentation).
 
-import Token from './model/Token'
-import browserColors from './browserColors';
-import { getTextWithinBounds, parseRGBAValue, parseHexValue } from '../utils/index';
-import TokenType from './model/TokenType';
-import CustomPaint from './model/CustomPaint';
+import Token from "./model/Token";
+import browserColors from "./browserColors";
+import {
+  getTextWithinBounds,
+  parseRGBAValue,
+  parseHexValue
+} from "../utils/index";
+import TokenType from "./model/TokenType";
+import CustomPaint from "./model/CustomPaint";
+import MessageType from "../messages/MessageType";
+
+const clientStoragePrefix = "css-2-local-vars-";
+
+const loadLatestState = async () => {
+  const elements = ["cleanName", "addStyles"];
+  let msg = { type: MessageType.InitializeUI };
+  for (var i = 0; i < elements.length; i++) {
+    const id = elements[i];
+    msg[id] = await figma.clientStorage.getAsync(clientStoragePrefix + id);
+  }
+  figma.ui.postMessage(msg);
+};
 
 // This shows the HTML page in "ui.html".
 figma.showUI(__html__);
+
+loadLatestState().then(() => {
+  // sent
+  console.log("UI Restored");
+});
 
 const parseStyles = (content: string): Token[] => {
   // remove comments
@@ -52,7 +74,7 @@ const parseStyles = (content: string): Token[] => {
       return;
     }
     if (rawValue.startsWith("var(")) {
-      const variableName = getTextWithinBounds(rawValue, '(', ')').trim();
+      const variableName = getTextWithinBounds(rawValue, "(", ")").trim();
       if (tokensDict[variableName]) {
         const parentToken = tokensDict[variableName];
         retrieveTokenValue(parentToken);
@@ -102,59 +124,68 @@ const parseStyles = (content: string): Token[] => {
 // callback. The callback will be passed the "pluginMessage" property of the
 // posted message.
 figma.ui.onmessage = msg => {
-  // One way of distinguishing between different types of messages sent from
-  // your HTML page is to use an object with a "type" property like this.
-  if (msg.type === "update-styles") {
-    const fileContent = msg.fileContent as string;
-    const cleanName = msg.cleanName as boolean;
-    const addStyles = msg.addStyles as boolean;
+  switch (msg.type) {
+    case MessageType.SetLocalStorageItem:
+      figma.clientStorage
+        .setAsync(clientStoragePrefix + msg.key, msg.value)
+        .then(() => console.log(`Updated ${msg.key} to ${msg.value} `));
+      break;
+    case MessageType.ImportStyles:
+      const fileContent = msg.fileContent as string;
+      const cleanName = msg.cleanName as boolean;
+      const addStyles = msg.addStyles as boolean;
 
-    let tokens: Token[] = [];
-    const hasBlock = fileContent.indexOf("{") > -1;
-    if (hasBlock) {
-      const blockContent = getTextWithinBounds(fileContent, '{', '}');
-      tokens = parseStyles(blockContent);
-    } else {
-      tokens = parseStyles(fileContent);
-    }
-
-    let updatedStylesCount = 0;
-    let addedStylesCount = 0;
-    const styles = figma.getLocalPaintStyles();
-    tokens.forEach(token => {
-      let tokenName = token.name;
-      if (cleanName) {
-        // remove "--" prefix
-        tokenName = tokenName.substr(2);
+      let tokens: Token[] = [];
+      const hasBlock = fileContent.indexOf("{") > -1;
+      if (hasBlock) {
+        const blockContent = getTextWithinBounds(fileContent, "{", "}");
+        tokens = parseStyles(blockContent);
+      } else {
+        tokens = parseStyles(fileContent);
       }
 
-      if (token.type !== TokenType.Color) {
-        console.log(`Can't create style for ${tokenName} type ${token.type} because only Colors are supported`);
-        return;
-      }
-
-      let hasStyle = false;
-      for (let i = 0; i < styles.length; i++) {
-        const style = styles[i];
-        if (style.name.toLowerCase() === tokenName.toLowerCase()) {
-          style.paints = [new CustomPaint(token.color)];
-          hasStyle = true;
-          i = styles.length;
-          updatedStylesCount++;
+      let updatedStylesCount = 0;
+      let addedStylesCount = 0;
+      const styles = figma.getLocalPaintStyles();
+      tokens.forEach(token => {
+        let tokenName = token.name;
+        if (cleanName) {
+          // remove "--" prefix
+          tokenName = tokenName.substr(2);
         }
-      }
-      if (!hasStyle && addStyles) {
-        const style = figma.createPaintStyle();
-        style.name = token.name;
-        style.paints = [new CustomPaint(token.color)];
-        addedStylesCount++;
-      }
-    });
-    alert(`Updated ${updatedStylesCount} styles and added ${addedStylesCount}.`);
-    // console.log(`Updated ${updatedStylesCount} styles`);
-    // console.log(`Added ${addedStylesCount} styles`);
+
+        if (token.type !== TokenType.Color) {
+          console.log(
+            `Can't create style for ${tokenName} type ${token.type} because only Colors are supported`
+          );
+          return;
+        }
+
+        let hasStyle = false;
+        for (let i = 0; i < styles.length; i++) {
+          const style = styles[i];
+          if (style.name.toLowerCase() === tokenName.toLowerCase()) {
+            style.paints = [new CustomPaint(token.color)];
+            hasStyle = true;
+            i = styles.length;
+            updatedStylesCount++;
+          }
+        }
+        if (!hasStyle && addStyles) {
+          const style = figma.createPaintStyle();
+          style.name = token.name;
+          style.paints = [new CustomPaint(token.color)];
+          addedStylesCount++;
+        }
+      });
+      alert(
+        `Updated ${updatedStylesCount} styles and added ${addedStylesCount}.`
+      );
+      // console.log(`Updated ${updatedStylesCount} styles`);
+      // console.log(`Added ${addedStylesCount} styles`);
+      // Make sure to close the plugin when you're done. Otherwise the plugin will
+      // keep running, which shows the cancel button at the bottom of the screen.
+      figma.closePlugin();
+      break;
   }
-  // Make sure to close the plugin when you're done. Otherwise the plugin will
-  // keep running, which shows the cancel button at the bottom of the screen.
-  figma.closePlugin();
 };

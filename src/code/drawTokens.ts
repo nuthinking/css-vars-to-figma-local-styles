@@ -1,3 +1,5 @@
+// Code by @edokoa: https://github.com/edokoa
+
 import Token from './model/Token';
 import TokenType from './model/TokenType';
 

@@ -146,8 +146,7 @@ figma.ui.onmessage = msg => {
       tokens.forEach(token => {
         let tokenName = token.name;
           // remove "--" prefix
-          tokenName = tokenName.substr(2);
-          token.name = tokenName;
+          token.name = token.name.substr(2);
         });
       }
 

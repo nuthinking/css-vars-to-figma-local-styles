@@ -142,6 +142,15 @@ figma.ui.onmessage = msg => {
       } else {
         tokens = parseStyles(fileContent);
       }
+      if (cleanName) {
+      tokens.forEach(token => {
+        let tokenName = token.name;
+          // remove "--" prefix
+          tokenName = tokenName.substr(2);
+          token.name = tokenName;
+        });
+      }
+
       if (createTree) {
         tokens = tokens.sort((a, b) => {
           return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
@@ -154,11 +163,6 @@ figma.ui.onmessage = msg => {
       const styles = figma.getLocalPaintStyles();
       tokens.forEach(token => {
         let tokenName = token.name;
-        if (cleanName) {
-          // remove "--" prefix
-          tokenName = tokenName.substr(2);
-        }
-
         if (token.type !== TokenType.Color) {
           console.log(
             `Can't create style for ${tokenName} type ${token.type} because only Colors are supported`

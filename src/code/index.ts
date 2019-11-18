@@ -16,7 +16,7 @@ import TokenType from './model/TokenType';
 import CustomPaint from './model/CustomPaint';
 import MessageType from '../messages/MessageType';
 import drawTokens from './drawTokens';
-
+import { humanSort } from '../utils/index';
 const clientStoragePrefix = 'css-2-local-vars-';
 
 (async () => {
@@ -151,9 +151,7 @@ figma.ui.onmessage = msg => {
       }
 
       if (createTree) {
-        tokens = tokens.sort((a, b) => {
-          return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
-        });
+        tokens = tokens.sort(humanSort);
         drawTokens(tokens);
       }
 

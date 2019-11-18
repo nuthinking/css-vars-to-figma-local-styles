@@ -41,8 +41,8 @@ export const parseHexValue = (rawValue: string): RGBA => {
 //Figma doesn't seem to support localeCompare due to sandbox limitations(?)
 //If it worked, we'd be able to substitute this function with localCompare.
 export const humanSort =(tA:Token, tB:Token) => {
-  let a=tA.name;
-  let b=tB.name;
+  let a=tA.name.toLowerCase();
+  let b=tB.name.toLowerCase();
 
   let aa = a.split(/(\d+)/);
   let bb = b.split(/(\d+)/);

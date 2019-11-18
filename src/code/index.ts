@@ -150,8 +150,9 @@ figma.ui.onmessage = msg => {
         });
       }
 
+      tokens = tokens.sort(humanSort);
+
       if (createTree) {
-        tokens = tokens.sort(humanSort);
         drawTokens(tokens);
       }
 

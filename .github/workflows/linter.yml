@@ -20,3 +20,5 @@ jobs:
       # Runs the Super-Linter action
       - name: Run Super-Linter
         uses: github/super-linter@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
